@@ -1,0 +1,30 @@
+# Dockerfile per il servizio API Web
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+# Installa dipendenze di sistema
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copia e installa requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copia solo i file necessari per l'API
+COPY api.py .
+COPY db_utils.py .
+COPY .env .env
+
+EXPOSE 8000
+
+# Usa gunicorn per production
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "60", "api:app"]
